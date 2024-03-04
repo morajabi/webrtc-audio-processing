@@ -97,6 +97,14 @@ mod webrtc {
 }
 
 fn main() -> Result<(), Error> {
+    // Ref: https://github.com/rust-lang/git2-rs/blob/master/libgit2-sys/build.rs#L27
+    if !Path::new("webrtc-audio-processing/src").exists() {
+    println!("Installing from git...");
+    let _ = std::process::Command::new("git")
+        .args(&["submodule", "update", "--init", "webrtc-audio-processing"])
+        .status();
+    }
+
     webrtc::build_if_necessary()?;
     let (include_dirs, lib_dirs) = webrtc::get_build_paths()?;
 
