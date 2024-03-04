@@ -115,6 +115,17 @@ impl Processor {
         self.inner.num_samples_per_frame()
     }
 
+    /// Set when microphone is going to be muted
+    pub fn set_output_will_be_muted(&self, muted: bool) {
+        self.inner.set_output_will_be_muted(muted);
+    }
+
+
+    /// Set the delay between the render and capture streams in milliseconds.
+    pub fn set_stream_delay_ms(&self, delay_ms: usize) {
+        self.inner.set_stream_delay_ms(delay_ms);
+    }
+
     /// Immediately updates the configurations of the internal signal processor.
     /// May be called multiple times after the initialization and during
     /// processing.
@@ -220,6 +231,14 @@ impl AudioProcessing {
         unsafe { ffi::get_num_samples_per_frame(self.inner) as usize }
     }
 
+    fn set_output_will_be_muted(&self, muted: bool) {
+        unsafe { ffi::set_output_will_be_muted(self.inner, muted) }
+    }
+
+    fn set_stream_delay_ms(&self, stream_delay_ms: usize) {
+        unsafe { ffi::set_stream_delay_ms(self.inner, stream_delay_ms as i32) }
+    }
+
     fn set_config(&self, config: Config) {
         unsafe {
             ffi::set_config(self.inner, &config.into());
@@ -309,6 +328,37 @@ mod tests {
         let config =
             Config { echo_canceller: Some(EchoCanceller::default()), ..Default::default() };
         ap.set_config(config);
+
+        let (render_frame, capture_frame) = sample_stereo_frames(&ap);
+
+        let mut render_frame_output = render_frame.clone();
+        ap.process_render_frame(&mut render_frame_output).unwrap();
+
+        // Render frame should not be modified.
+        assert_eq!(render_frame, render_frame_output);
+
+        let mut capture_frame_output = capture_frame.clone();
+        ap.process_capture_frame(&mut capture_frame_output).unwrap();
+
+        // Echo cancellation should have modified the capture frame.
+        // We don't validate how it's modified. Out of scope for this unit test.
+        assert_ne!(capture_frame, capture_frame_output);
+
+        let stats = ap.get_stats();
+        assert!(stats.echo_return_loss.is_some());
+        println!("{:#?}", stats);
+    }
+
+    #[test]
+    fn test_additional_configs() {
+        let config = init_config(2);
+        let mut ap = Processor::new(&config).unwrap();
+
+        let config =
+            Config { echo_canceller: Some(EchoCanceller::default()), ..Default::default() };
+        ap.set_config(config);
+        ap.set_stream_delay_ms(10);
+        ap.set_output_will_be_muted(true);
 
         let (render_frame, capture_frame) = sample_stereo_frames(&ap);
 
