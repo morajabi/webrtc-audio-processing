@@ -82,7 +82,7 @@ mod webrtc {
             .out_dir(abseil_build_dir)
             .define("CMAKE_INSTALL_PREFIX", install_dir.to_str().unwrap())
             .uses_cxx11()
-            .cxxflag("-std=c++11")
+            .cxxflag("-std=c++17")
             .build();
 
 
