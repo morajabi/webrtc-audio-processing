@@ -47,7 +47,7 @@ AudioProcessing* audio_processing_create(
   AudioProcessing* ap = new AudioProcessing;
   ap->processor.reset(webrtc::AudioProcessingBuilder().Create());
 
-  const bool has_keyboard = true;
+  const bool has_keyboard = false;
   ap->capture_stream_config = webrtc::StreamConfig(
       sample_rate_hz, num_capture_channels, has_keyboard);
   ap->render_stream_config = webrtc::StreamConfig(
