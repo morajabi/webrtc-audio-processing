@@ -79,6 +79,9 @@ void set_runtime_setting(AudioProcessing* ap, webrtc::AudioProcessing::RuntimeSe
 // It assumes that there is no such delay if this function is not called.
 void set_stream_delay_ms(AudioProcessing* ap, int delay);
 
+// Set to true when the stream has a key press event 
+void set_stream_key_pressed(AudioProcessing* ap, bool key_pressed);
+
 // Set to true when the output of AudioProcessing will be muted or in some other way not used.
 // Ideally, the captured audio would still be processed, but some components may change behavior
 // based on this information.

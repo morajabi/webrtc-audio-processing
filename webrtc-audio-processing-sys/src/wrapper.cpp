@@ -119,6 +119,10 @@ void set_runtime_setting(AudioProcessing* ap, webrtc::AudioProcessing::RuntimeSe
   ap->processor->SetRuntimeSetting(setting);
 }
 
+void set_stream_key_pressed(AudioProcessing* ap, bool key_pressed) {
+  ap->processor->set_stream_key_pressed(key_pressed);
+}
+
 void set_stream_delay_ms(AudioProcessing* ap, int delay) {
   // TODO: Need to mutex lock.
   ap->stream_delay_ms = delay;

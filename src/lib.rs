@@ -120,10 +120,14 @@ impl Processor {
         self.inner.set_output_will_be_muted(muted);
     }
 
-
     /// Set the delay between the render and capture streams in milliseconds.
     pub fn set_stream_delay_ms(&self, delay_ms: usize) {
         self.inner.set_stream_delay_ms(delay_ms);
+    }
+
+    /// Set if a key press occurred in the stream.
+    pub fn set_stream_key_pressed(&self, key_pressed: bool) {
+        self.inner.set_stream_key_pressed(key_pressed);
     }
 
     /// Immediately updates the configurations of the internal signal processor.
@@ -237,6 +241,10 @@ impl AudioProcessing {
 
     fn set_stream_delay_ms(&self, stream_delay_ms: usize) {
         unsafe { ffi::set_stream_delay_ms(self.inner, stream_delay_ms as i32) }
+    }
+
+    fn set_stream_key_pressed(&self, key_pressed: bool) {
+        unsafe { ffi::set_stream_key_pressed(self.inner, key_pressed) }
     }
 
     fn set_config(&self, config: Config) {
