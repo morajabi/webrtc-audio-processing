@@ -82,7 +82,10 @@ mod webrtc {
         let mut options = CopyOptions::new();
         options.overwrite = true;
 
-        fs_extra::dir::copy(BUNDLED_SOURCE_PATH, &out_dir, &options)?;
+        // fs_extra::dir::copy(BUNDLED_SOURCE_PATH, &out_dir, &options)?;
+        let source_in_out = &out_dir.join(BUNDLED_SOURCE_PATH);
+        std::fs::create_dir_all(&source_in_out).unwrap();
+        cp_r(BUNDLED_SOURCE_PATH, &source_in_out).expect("cp_r");
 
         Ok(out_dir.join(BUNDLED_SOURCE_PATH))
     }
@@ -155,6 +158,14 @@ fn derive_serde(binding_file: &Path) -> Result<(), Error> {
 }
 
 fn main() -> Result<(), Error> {
+    // Ref: https://github.com/rust-lang/git2-rs/blob/master/libgit2-sys/build.rs#L27
+    if !Path::new("webrtc-audio-processing/src").exists() {
+        println!("Installing from git...");
+        let _ = std::process::Command::new("git")
+            .args(&["submodule", "update", "--init", "webrtc-audio-processing"])
+            .status();
+    }
+
     webrtc::build_if_necessary()?;
     let (webrtc_include, webrtc_lib) = webrtc::get_build_paths()?;
 
@@ -223,6 +234,42 @@ fn main() -> Result<(), Error> {
 
     if cfg!(feature = "derive_serde") {
         derive_serde(&binding_file).expect("Failed to modify derive macros");
+    }
+
+    rerun_if(Path::new("webrtc-audio-processing/webrtc"));
+    rerun_if(Path::new("webrtc-audio-processing/configure.ac"));
+
+    Ok(())
+}
+
+fn rerun_if(path: &Path) {
+    if path.is_dir() {
+        for entry in std::fs::read_dir(path).expect("read_dir") {
+            rerun_if(&entry.expect("entry").path());
+        }
+    } else {
+        println!("cargo:rerun-if-changed={}", path.display());
+    }
+}
+
+fn cp_r(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), Error> {
+    let profile = std::env::var("PROFILE").unwrap();
+    let profile = profile.as_str();
+
+    for e in from.as_ref().read_dir().unwrap() {
+        let e = e.unwrap();
+        let from = e.path();
+        let to = to.as_ref().join(e.file_name());
+        if e.file_type().unwrap().is_dir() {
+            std::fs::create_dir_all(&to)?;
+            cp_r(&from, &to)?;
+        } else {
+            if profile == "debug" && from.clone().to_str().unwrap().contains(".git/") {
+                continue;
+            }
+            println!("{} => {}", from.display(), to.display());
+            std::fs::copy(&from, &to)?;
+        }
     }
 
     Ok(())
